@@ -1,0 +1,58 @@
+! Input file for SFINCS version 3
+
+&general
+    RHSMode = 2 ! Solve for 3x3 transport matrix
+	ambipolarSolve = .false. ! Whether or not to determine the ambipolar Er
+/
+
+&geometryParameters
+	geometryScheme = 5 ! Set how the magnetic geometry is specified
+	inputRadialCoordinate = 3 ! rN
+	rN_wish = 0.5 ! Surface on which to perform the resolution scan (will be overwritten for other applications)
+	inputRadialCoordinateForGradients = 4 ! rHat
+	VMECRadialOption = 0 ! Interpolate when the target surface does not exactly match a VMEC flux surface
+	equilibriumFile = "wout_vmec.nc"
+	min_Bmn_to_load = 0.0 ! Only Fourier modes of at least this size will be loaded from the equilibriumFile
+	VMEC_Nyquist_option = 1 ! Ignore higher mode numbers of the magnetic configuration
+/
+
+&speciesParameters
+	Zs = 1.0
+	mHats = 2.496634580437467d+00 ! Average mass of D and T in units of the proton mass
+    nHats = 1.8000000003021746 ! With D and T rolled into one species
+    dnHatdrHats = -0.26725895961109203 ! With D and T rolled into one species
+    THats = 10.000000001797774 ! With D and T rolled into one species
+    dTHatdrHats = -9.954507300393985 ! With D and T rolled into one species
+/
+
+&physicsParameters
+	Delta = 0.0045694 ! Sets reference units to standard values
+	alpha = 1.0 ! Sets reference units to standard values
+	nu_n = -1 ! Auto-calculates nu_n. The species is assumed to be electrons for n and T inputs in the Coulomb logarithm calculation, which should be perfect in this case
+	collisionOperator = 0 ! Specifies collision operator to use
+	includeXDotTerm = .true. ! This term is necessary to calculate full trajectories
+	includeElectricFieldTermInXiDot = .true. ! This term is necessary to calculate full trajectories
+	magneticDriftScheme = 0 ! Whether or not to include tangential drifts, and if so, which model to use
+	includePhi1 = .false. ! Whether or not to include variation of electric potential on the flux surface
+	Er = 5.0 ! Seed value of the radial electric field for this flux surface
+/
+
+&resolutionParameters
+	Ntheta = 31 ! Number of poloidal grid points (should be odd)
+	Nzeta = 119 ! Number of toroidal grid points per period (should be odd)
+	Nxi = 170 ! Number of Legendre polynomials used to represent the pitch-angle dependence of the distribution function
+	Nx = 7 ! Number of grid points in energy used to represent the distribution function
+	NL = 4 ! Number of Legendre polynomials used to represent the Rosenbluth potentials
+	solverTolerance = 1d-06 ! Tolerance used to define convergence of the iterative solver
+/
+
+&otherNumericalParameters
+/
+
+&preconditionerOptions
+/
+
+&export_f
+	export_full_f = .false. ! Whether or not to save the full distribution function in the output file
+	export_delta_f = .false. ! Whether or not to save the departure from the Maxwellian distribution function in the output file
+/
