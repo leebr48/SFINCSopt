@@ -15,8 +15,8 @@ dnHatdrHats = [[-0.21746074335787643, -0.21746074335787643], [-0.267258959611092
 THats = [[14.925059121976009, 14.925059121976009], [10.000000001797774, 10.000000001797774], [4.999998821932152, 4.999998821932152]] # Species temperatures in SFINCS units; first index is for the surface, second index is for the species
 dTHatdrHats = [[-10.625892808407443, -10.625892808407443], [-9.954507300393985, -9.954507300393985], [-9.929753618960675, -9.929753618960675]] # Derivatives of species temperatures wrt rHat; first index is for the surface, second index is for the species
 Ers = [15, 15, 15] # Radial electric field in SFINCS units; index indicates flux surface
-LTargets = [[[-0.00016516411764600346, 0], [0, 0]], [[-0.0005159076261538864, 0], [0, 0]], [[-0.0015055649421042677, 0], [0, 0]]] # Target thermal transport coefficient values; first index is for the surface, second index is for the species, third index is for the coefficient (L11 and L31, in that order)
-targetWeights = [[[1, 1], [1, 1]], [[1, 1], [1, 1]], [[1, 1], [1, 1]]] # Weights for the terms in the objective function; the meanings of each dimension are the same as in <LTargets>
+LTargets = [[[-0.00016516411764600346, 0], [0, 0]], [[-0.0005159076261538864, 0], [0, 0]], [[-0.0015055649421042677, 0], [0, 0]]] # Target thermal transport coefficient values; first index is for the surface, second index is for the species, third index is for the coefficient (L11 and L31, in that order). If the last index contains only one number for each surface/species pair, only the L11 coefficients will be targeted.
+targetWeights = [[[1, 1], [1, 1]], [[1, 1], [1, 1]], [[1, 1], [1, 1]]] # Weights for the terms in the objective function; the meanings of each dimension are the same as in <LTargets>, and the dimensions must match
 unfixMajorRadius = False # If True, the VMEC parameter RBC(0,0) will be included in the optimization space
 unfixPHIEDGE = False # If True, the VMEC parameter PHIEDGE will be included in the optimization space
 autobound = 0.1 # Domain of valid values for variables in the optimization space will be [(1 - autobound)*x, (1 + autobound)*x], where x denotes an arbitrary variable 
@@ -63,7 +63,11 @@ from read_transportMatrix import read_transportMatrix
 # Define some useful functions
 def extract_value(dirname):
     try:
-        ret = read_transportMatrix(dirname)
+        if np.array(LTargets).shape[-1] == 1:
+            onlyL11 = True
+        else:
+            onlyL11 = False
+        ret = read_transportMatrix(dirname, onlyL11=onlyL11)
     except FileNotFoundError:
         # NOTE: could increase SFINCS resolution here
         print("Failed to extract data from: " + dirname, flush=True)
