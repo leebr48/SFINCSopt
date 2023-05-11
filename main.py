@@ -20,7 +20,8 @@ targetWeights = [[[1, 1], [1, 1]], [[1, 1], [1, 1]], [[1, 1], [1, 1]]] # Weights
 unfixMajorRadius = False # If True, the VMEC parameter RBC(0,0) will be included in the optimization space
 unfixPHIEDGE = False # If True, the VMEC parameter PHIEDGE will be included in the optimization space
 autobound = 0.1 # Domain of valid values for variables in the optimization space will be [(1 - autobound)*x, (1 + autobound)*x], where x denotes an arbitrary variable
-overrideX0 = True # If True, the initial configuration provided to the code will replace the best member of the initial population; may be useful if making progress proves difficult
+useSA = False # If False, use differential evolution (DE); if True, use simulated annealing (SA)
+specifyX0 = True # If True, the initial configuration provided to the code will replace the best member of the initial population (DE) or will act as a starting point for the optimizer (SA); may be useful if making progress proves difficult
 DEkwargs = {'args':(),
             'strategy':'best1bin',
             'maxiter':1000,
@@ -36,7 +37,19 @@ DEkwargs = {'args':(),
             'atol':0,
             'updating':'deferred',
             'workers':1,
-            'constraints':()} # NOTE: These were set using a mix of SciPy defaults, SciPy recommendations, and experience with STELLOPT - modifications may be necessary
+            'constraints':(),
+            'x0':None} # NOTE: These were set using a mix of SciPy defaults, SciPy recommendations, and experience with STELLOPT for differential evolution - modifications may be necessary
+SAkwargs = {'args':(),
+            'maxiter':1000,
+            'initial_temp':5230,
+            'restart_temp_ratio':2e-5,
+            'visit':2.62,
+            'accept':-5.0,
+            'maxfun':1e7,
+            'seed':None,
+            'no_local_search':False,
+            'callback':None,
+            'x0':None} # NOTE: These are SciPy defaults - modifications may be necessary
 BIG_NUM = 1e3 # Large number that is returned to the optimizer in place of L11 if SFINCS fails to run
 fullVMECInputFileName = "input.vmec" # This VMEC input file specifies the initial equilibrium for the optimization
 strippedVMECInputFileName = "stripped_input.vmec" # The should be the same as <fullVMECInputFileName>, but with all the boundary parameters deleted
@@ -52,7 +65,7 @@ import numpy as np
 import os
 from glob import glob
 from shutil import copy
-from scipy.optimize import differential_evolution
+from scipy.optimize import differential_evolution, dual_annealing
 from simsopt.geo.surfacerzfourier import SurfaceRZFourier
 from copy import deepcopy
 
@@ -201,21 +214,32 @@ if __name__ == "__main__": # This structure supposedly sometimes helps Python MP
         f.write(header + '\n')
 
     # Set up the bounds for the global optimizer
-    boundsList = [(float(xval * (1 - autobound)), float(xval * (1 + autobound))) for xval in x]
+    boundsList = [tuple(np.sort((float(xval * (1 - autobound)), float(xval * (1 + autobound))))) for xval in x]
 
-    # Carry out the optimization
+    # Sort out the args and kwargs
     args = [opt, boundsList]
-    if overrideX0:
+    
+    if useSA:
+        kwargs = SAkwargs
+    else:
+        kwargs = DEkwargs
+    
+    if specifyX0:
         x0 = deepcopy(x) # deepcopy might be overkill, but it should ensure we don't get any weird behavior
-        DEkwargs['x0'] = x0
-    res = differential_evolution(*args, **DEkwargs)
+        kwargs['x0'] = x0
+    
+    # Carry out the optimization
+    if useSA:
+        res = dual_annealing(*args, **kwargs)
+    else:
+        res = differential_evolution(*args, **kwargs)
 
     # Save some relevant outputs
     np.save("x.npy", res.x)
     np.save("fun.npy", res.fun)
     np.save("my_iter.npy", my_iter)
 
-    # Print some relevant outputs in the log file
+    # Print some relevant outputs in the out file
     print("success = " + str(res.success), flush=True)
     print("x =  " + str(res.x), flush=True)
     print("status = " + str(res.message), flush=True)
