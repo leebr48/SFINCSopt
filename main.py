@@ -19,7 +19,8 @@ LTargets = [[[-0.00016516411764600346, 0], [0, 0]], [[-0.0005159076261538864, 0]
 targetWeights = [[[1, 1], [1, 1]], [[1, 1], [1, 1]], [[1, 1], [1, 1]]] # Weights for the terms in the objective function; the meanings of each dimension are the same as in <LTargets>, and the dimensions must match
 unfixMajorRadius = False # If True, the VMEC parameter RBC(0,0) will be included in the optimization space
 unfixPHIEDGE = False # If True, the VMEC parameter PHIEDGE will be included in the optimization space
-autobound = 0.1 # Domain of valid values for variables in the optimization space will be [(1 - autobound)*x, (1 + autobound)*x], where x denotes an arbitrary variable 
+autobound = 0.1 # Domain of valid values for variables in the optimization space will be [(1 - autobound)*x, (1 + autobound)*x], where x denotes an arbitrary variable
+overrideX0 = True # If True, the initial configuration provided to the code will replace the best member of the initial population; may be useful if making progress proves difficult
 DEkwargs = {'args':(),
             'strategy':'best1bin',
             'maxiter':1000,
@@ -35,8 +36,7 @@ DEkwargs = {'args':(),
             'atol':0,
             'updating':'deferred',
             'workers':1,
-            'constraints':(),
-            'x0':None} # NOTE: These were set using a mix of SciPy defaults, SciPy recommendations, and experience with STELLOPT - modifications may be necessary
+            'constraints':()} # NOTE: These were set using a mix of SciPy defaults, SciPy recommendations, and experience with STELLOPT - modifications may be necessary
 BIG_NUM = 1e3 # Large number that is returned to the optimizer in place of L11 if SFINCS fails to run
 fullVMECInputFileName = "input.vmec" # This VMEC input file specifies the initial equilibrium for the optimization
 strippedVMECInputFileName = "stripped_input.vmec" # The should be the same as <fullVMECInputFileName>, but with all the boundary parameters deleted
@@ -54,6 +54,7 @@ from glob import glob
 from shutil import copy
 from scipy.optimize import differential_evolution
 from simsopt.geo.surfacerzfourier import SurfaceRZFourier
+from copy import deepcopy
 
 # Import internal functions
 from run_compute import run_compute
@@ -204,6 +205,9 @@ if __name__ == "__main__": # This structure supposedly sometimes helps Python MP
 
     # Carry out the optimization
     args = [opt, boundsList]
+    if overrideX0:
+        x0 = deepcopy(x) # deepcopy might be overkill, but it should ensure we don't get any weird behavior
+        DEkwargs['x0'] = x0
     res = differential_evolution(*args, **DEkwargs)
 
     # Save some relevant outputs
